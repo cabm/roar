@@ -24,7 +24,7 @@ class MasonControlsTest < MiniTest::Spec
 
   describe "#from_json" do
     it "uses '@controls' key" do
-      subject.from_json("{\"@controls\":{\"self\":{\"href\":\"//lifer\"}}}").controls.values.must_equal [link("href" => "//lifer", "rel" => "self")]
+      subject.from_json("{\"@controls\":{\"self\":{\"href\":\"//lifer\"}}}").links.values.must_equal [link("href" => "//lifer", "rel" => "self")]
     end
   end
 end
