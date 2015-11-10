@@ -7,7 +7,7 @@ class MasonJsonTest < MiniTest::Spec
       include Roar::JSON
       include Roar::JSON::Mason
 
-      links :self do
+      controls :self do
         [{:lang => "en", :href => "http://en.hit"},
          {:lang => "de", :href => "http://de.hit"}]
       end

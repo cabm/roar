@@ -17,14 +17,14 @@ class MasonControlsTest < MiniTest::Spec
   subject { Object.new.extend(rpr) }
 
   describe "#to_json" do
-    it "uses 'links' key" do
-      subject.to_json.must_equal "{\"links\":{\"self\":{\"href\":\"//songs\"}}}"
+    it "uses '@controls' key" do
+      subject.to_json.must_equal "{\"@controls\":{\"self\":{\"href\":\"//songs\"}}}"
     end
   end
 
   describe "#from_json" do
-    it "uses 'links' key" do
-      subject.from_json("{\"links\":{\"self\":{\"href\":\"//lifer\"}}}").links.values.must_equal [link("href" => "//lifer", "rel" => "self")]
+    it "uses '@controls' key" do
+      subject.from_json("{\"@controls\":{\"self\":{\"href\":\"//lifer\"}}}").controls.values.must_equal [link("href" => "//lifer", "rel" => "self")]
     end
   end
 end

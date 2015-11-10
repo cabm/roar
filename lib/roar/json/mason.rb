@@ -186,8 +186,8 @@ module Roar
           def links_definition_options
             # property :links_array,
             {
-              :as       => :links,
-              :extend   => HAL::Links::LinkCollectionRepresenter,
+              :as       => :@controls,
+              :extend   => Mason::Controls::LinkCollectionRepresenter,
               :instance => lambda { |*| LinkCollection.new(link_array_rels) }, # defined in InstanceMethods as this is executed in represented context.
               :exec_context => :decorator,
             }
@@ -199,7 +199,7 @@ module Roar
           #     [{:lang => "en", :href => "http://en.hit"},
           #      {:lang => "de", :href => "http://de.hit"}]
           #   end
-          def links(options, &block)
+          def controls(options, &block)
             options = {:rel => options} if options.is_a?(Symbol)
             options[:array] = true
             link(options, &block)
@@ -214,7 +214,7 @@ module Roar
           #   ]
           # end
           def curies(&block)
-            links(:curies, &block)
+            controls(:curies, &block)
           end
         end
       end
