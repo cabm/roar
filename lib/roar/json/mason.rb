@@ -74,7 +74,7 @@ module Roar
 
       module ClassMethods
         def links_definition_options
-          super.merge(:as => :_links)
+          super.merge(:as => :@controls)
         end
       end
 
