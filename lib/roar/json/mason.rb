@@ -193,6 +193,11 @@ module Roar
             }
           end
 
+          def namespaces(&block)
+            options = {:rel => :@namespaces}
+            link(options, &block) 
+          end
+
           # Use this to define link arrays. It accepts the shared rel attribute and an array of options per link object.
           #
           #   links :self do
@@ -214,7 +219,8 @@ module Roar
           #   ]
           # end
           def curies(&block)
-            controls(:curies, &block)
+            namespaces(&block)
+            #controls(:curies, &block)
           end
         end
       end

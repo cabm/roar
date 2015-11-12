@@ -189,8 +189,8 @@ class LinkCollectionTest < MiniTest::Spec
 end
 
 
-class HalCurieTest < MiniTest::Spec
-  representer!([Roar::JSON::HAL]) do
+class MasonCurieTest < MiniTest::Spec
+  representer!([Roar::JSON::Mason]) do
     link "doc:self" do
       "/"
     end
@@ -202,5 +202,26 @@ class HalCurieTest < MiniTest::Spec
     end
   end
 
-  it { Object.new.extend(rpr).to_hash.must_equal({"_links"=>{"doc:self"=>{"href"=>"/"}, :curies=>[{"name"=>:doc, "href"=>"//docs/{rel}", "templated"=>true}]}}) }
+  it { Object.new.extend(rpr).to_hash.must_equal(
+    {
+      "@namespaces"=> {
+        "is"=> {
+          "name"=> "//docs/{rel}"
+        }
+      },
+      "@controls"=> {
+        "is:self"=> {
+          "href"=> "/"
+
+        }
+      }
+      
+    }
+  )}
 end
+
+
+
+
+
+
