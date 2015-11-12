@@ -23,38 +23,38 @@ class MasonJsonTest < MiniTest::Spec
   describe "links" do
     describe "parsing" do
       it "parses link array" do # TODO: remove me.
-        obj = subject.from_json("{\"_links\":{\"self\":[{\"lang\":\"en\",\"href\":\"http://en.hit\"},{\"lang\":\"de\",\"href\":\"http://de.hit\"}]}}")
+        obj = subject.from_json("{\"@controls\":{\"self\":[{\"lang\":\"en\",\"href\":\"http://en.hit\"},{\"lang\":\"de\",\"href\":\"http://de.hit\"}]}}")
         obj.links.must_equal "self" => [link("rel" => "self", "href" => "http://en.hit", "lang" => "en"), link("rel" => "self", "href" => "http://de.hit", "lang" => "de")]
       end
 
       it "parses single links" do # TODO: remove me.
-        obj = subject.from_json("{\"_links\":{\"next\":{\"href\":\"http://next\"}}}")
+        obj = subject.from_json("{\"@controls\":{\"next\":{\"href\":\"http://next\"}}}")
         obj.links.must_equal "next" => link("rel" => "next", "href" => "http://next")
       end
 
       it "parses link and link array" do
-        obj = subject.from_json("{\"_links\":{\"next\":{\"href\":\"http://next\"}, \"self\":[{\"lang\":\"en\",\"href\":\"http://en.hit\"},{\"lang\":\"de\",\"href\":\"http://de.hit\"}]}}")
+        obj = subject.from_json("{\"@controls\":{\"next\":{\"href\":\"http://next\"}, \"self\":[{\"lang\":\"en\",\"href\":\"http://en.hit\"},{\"lang\":\"de\",\"href\":\"http://de.hit\"}]}}")
         obj.links.must_equal "next" => link("rel" => "next", "href" => "http://next"), "self" => [link("rel" => "self", "href" => "http://en.hit", "lang" => "en"), link("rel" => "self", "href" => "http://de.hit", "lang" => "de")]
       end
 
       it "parses empty link array" do
-        subject.from_json("{\"_links\":{\"self\":[]}}").links[:self].must_equal []
+        subject.from_json("{\"@controls\":{\"self\":[]}}").links[:self].must_equal []
       end
 
       it "parses non-existent link array" do
-        subject.from_json("{\"_links\":{}}").links[:self].must_equal nil # DISCUSS: should this be []?
+        subject.from_json("{\"@controls\":{}}").links[:self].must_equal nil # DISCUSS: should this be []?
       end
 
       it "rejects single links declared as array" do
         assert_raises TypeError do
-          subject.from_json("{\"_links\":{\"self\":{\"href\":\"http://next\"}}}")
+          subject.from_json("{\"@controls\":{\"self\":{\"href\":\"http://next\"}}}")
         end
       end
     end
 
     describe "rendering" do
       it "renders link and link array" do
-        subject.to_json.must_equal "{\"_links\":{\"self\":[{\"lang\":\"en\",\"href\":\"http://en.hit\"},{\"lang\":\"de\",\"href\":\"http://de.hit\"}],\"next\":{\"href\":\"http://next\"}}}"
+        subject.to_json.must_equal "{\"@controls\":{\"self\":[{\"lang\":\"en\",\"href\":\"http://en.hit\"},{\"lang\":\"de\",\"href\":\"http://de.hit\"}],\"next\":{\"href\":\"http://next\"}}}"
       end
 
       it "renders empty link array" do
