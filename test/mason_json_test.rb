@@ -191,14 +191,15 @@ end
 
 class MasonCurieTest < MiniTest::Spec
   representer!([Roar::JSON::Mason]) do
-    link "doc:self" do
-      "/"
-    end
 
     curies do
-      [{:name => :doc,
-        :href => "//docs/{rel}",
-        :templated => true}]
+      {:is => {
+        "name" => "//docs/{rel}"
+      }}
+    end
+
+    link "is:self" do
+      "/"
     end
   end
 
