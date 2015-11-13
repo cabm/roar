@@ -192,7 +192,7 @@ end
 class MasonCurieTest < MiniTest::Spec
   representer!([Roar::JSON::Mason]) do
 
-    curies do
+    curie do
       {
         "name" => "//docs/{rel}"
       }

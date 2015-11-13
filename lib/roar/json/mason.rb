@@ -55,6 +55,28 @@ module Roar
         def is_array?(rel)
           @array_rels.include?(rel.to_s)
         end
+
+        def create_curies_definition!
+            return if representable_attrs.get(:curies) # only create it once.
+            options = curies_definition_options
+
+
+            #options.merge!(:getter => lambda { |opts| LinkCollection[*compile_links_for(( representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)] })
+            options.merge!(:getter => lambda { |opts| prepare_curies!(opts) })
+            representable_attrs.add(:curies, options)
+        end
+
+        # Add a curies link section as defined in
+          #
+          # curies do
+          #   "name" => "//docs/{rel}"
+          # end
+
+        def curie(&block)
+          create_curies_definition!
+          options = {:rel => :is}
+          curie_configs << [options, block]
+        end
       end
 
       # Including this module in your representer will render and parse your hyperlinks
@@ -170,37 +192,16 @@ module Roar
             link(options, &block)
           end
 
-          # Add a curies link section as defined in
-          #
-          # curies do
-          #   "name" => "//docs/{rel}"
-          # end
-
-          def curies(&block)
-            create_curies_definition!
-            options = {:rel => :is}
-            curie_configs << [options, block]
-          end
-
           def curie_configs
             representable_attrs[:curies] ||= Representable::Inheritable::Array.new
           end
 
-          def create_curies_definition!
-            return if representable_attrs.get(:curies) # only create it once.
-            options = curies_definition_options
-
-
-            options.merge!(:getter => lambda { |opts| LinkCollection[*compile_links_for(( representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)] })
-            representable_attrs.add(:curies, options)
-          end
-
           # Needed for cleanup in create_curies_definition! method
           #
-          # def prepare_curies!(options)
-          #   return [] if options[:curies] == false
-          #   LinkCollection[*compile_links_for(curie_configs, options)]
-          # end
+          def prepare_curies!(options)
+            return [] if options[:curies] == false
+            LinkCollection[*compile_links_for(curie_configs, options)]
+          end
 
           def curies_definition_options
             {
