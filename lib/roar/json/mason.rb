@@ -3,45 +3,12 @@ require 'pry'
 
 module Roar
   module JSON
-    # Including the JSON::HAL module in your representer will render and parse documents
-    # following the HAL specification: http://stateless.co/hal_specification.html
-    # Links will be embedded using the +_links+ key, nested resources with the +_embedded+ key.
+    # Including the JSON::Mason module in your representer will render and parse documents
+    # following the Mason draft 2 specification: https://github.com/JornWildt/Mason/blob/master/Documentation/Mason-draft-2.md
     #
-    # Embedded resources can be specified when calling #property or +collection using the
-    # :embedded => true option.
-    #
-    # Link arrays can be defined using +::links+.
-    #
-    # CURIEs are specified with the - surprise - +::curie+ class method.
-    #
-    # Example:
-    #
-    #   module OrderRepresenter
-    #     include Roar::JSON::HAL
-    #
-    #     property :id
-    #     collection :items, :class => Item, :extend => ItemRepresenter, :embedded => true
-    #
-    #     link :self do
-    #       "http://orders/#{id}"
-    #     end
-    #
-    #     links :self do
-    #       [{:lang => "en", :href => "http://en.hit"},
-    #        {:lang => "de", :href => "http://de.hit"}]
-    #     end
-    #
-    #     curies do
-    #       [{:name => :doc,
-    #         :href => "//docs/{rel}",
-    #         :templated => true}
-    #       ]
-    #     end
-    #   end
-    #
-    # Renders to
-    #
-    #   "{\"id\":1,\"_embedded\":{\"items\":[{\"value\":\"Beer\",\"_links\":{\"self\":{\"href\":\"http://items/Beer\"}}}]},\"_links\":{\"self\":{\"href\":\"http://orders/1\"}}}"
+    # TODO: document how links, curies and <TBD> can be called to generate and consume Mason format
+    # NOTE: Used HAL code as a template for creating the Mason format for Roar :)
+
     module Mason
       def self.included(base)
         base.class_eval do
@@ -90,21 +57,21 @@ module Roar
         end
       end
 
-      # Including this module in your representer will render and parse your embedded hyperlinks
-      # following the HAL specification: http://stateless.co/hal_specification.html
+      # Including this module in your representer will render and parse your hyperlinks
+      # following the Mason draft 2 specification:
+      #     https://github.com/JornWildt/Mason/blob/master/Documentation/Mason-draft-2.md
       #
       #   module SongRepresenter
       #     include Roar::JSON
-      #     include Roar::JSON::HAL::Links
+      #     include Roar::JSON::Mason::Controls
       #
       #     link :self { "http://self" }
       #   end
       #
       # Renders to
       #
-      #   {"links":{"self":{"href":"http://self"}}}
+      #   {"@controls":{"self":{"href":"http://self"}}}
       #
-      # Note that the HAL::Links module alone doesn't prepend an underscore to +links+. Use the JSON::HAL module for that.
       module Controls
         def self.included(base)
           base.extend ClassMethods  # ::links_definition_options
@@ -127,7 +94,6 @@ module Roar
           end
         end
 
-
         require 'representable/json/hash'
         module LinkCollectionRepresenter
           include Representable::JSON::Hash
@@ -142,7 +108,6 @@ module Roar
               hsh.each { |k,v| v.delete("rel") }
             end
           end
-
 
           def from_hash(hash, *args)
             hash.each { |k,v| hash[k] = LinkArray.new(v, k) if is_array?(k) }
@@ -182,7 +147,6 @@ module Roar
           end
         end
 
-
         module ClassMethods
           def links_definition_options
             # property :links_array,
@@ -194,11 +158,9 @@ module Roar
             }
           end
 
-
-
           # Use this to define link arrays. It accepts the shared rel attribute and an array of options per link object.
           #
-          #   links :self do
+          #   controls :self do
           #     [{:lang => "en", :href => "http://en.hit"},
           #      {:lang => "de", :href => "http://de.hit"}]
           #   end
@@ -208,41 +170,38 @@ module Roar
             link(options, &block)
           end
 
-          # Add a CURIEs link section as defined in
+          # Add a curies link section as defined in
           #
           # curies do
-          #   [{:name => :doc,
-          #     :href => "//docs/{rel}",
-          #     :templated => true}
-          #   ]
+          #   "name" => "//docs/{rel}"
           # end
+
           def curies(&block)
-            create_curies_definition!            
-            options = {:rel => :is} 
+            create_curies_definition!
+            options = {:rel => :is}
             curie_configs << [options, block]
-            
-            #namespaces(:@namespaces, &block)
-            #controls(:curies, &block)
           end
+
           def curie_configs
             representable_attrs[:curies] ||= Representable::Inheritable::Array.new
           end
-          
+
           def create_curies_definition!
             return if representable_attrs.get(:curies) # only create it once.
             options = curies_definition_options
-            
-           
+
+
             options.merge!(:getter => lambda { |opts| LinkCollection[*compile_links_for(( representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)] })
             representable_attrs.add(:curies, options)
           end
-              #
+
+          # Needed for cleanup in create_curies_definition! method
+          #
           # def prepare_curies!(options)
           #   return [] if options[:curies] == false
           #   LinkCollection[*compile_links_for(curie_configs, options)]
           # end
-       
-          
+
           def curies_definition_options
             {
               :as       => :@namespaces,
@@ -251,8 +210,6 @@ module Roar
               :exec_context => :decorator,
            }
           end
-          
-          
         end
       end
     end
