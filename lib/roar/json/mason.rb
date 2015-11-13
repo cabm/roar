@@ -92,6 +92,12 @@ module Roar
           def link_array_rels
             link_configs.collect { |cfg| cfg.first[:array] ? cfg.first[:rel] : nil }.compact
           end
+          
+          def prepare_curies!(options)
+            return [] if options[:curies] == false
+            LinkCollection[*compile_links_for((representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)]
+          end
+          
         end
 
         require 'representable/json/hash'
@@ -190,17 +196,9 @@ module Roar
             return if representable_attrs.get(:curies) # only create it once.
             options = curies_definition_options
 
-
-            options.merge!(:getter => lambda { |opts| LinkCollection[*compile_links_for(( representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)] })
+            options.merge!(:getter => lambda { |opts| prepare_curies!(opts) })
             representable_attrs.add(:curies, options)
           end
-
-          # Needed for cleanup in create_curies_definition! method
-          #
-          # def prepare_curies!(options)
-          #   return [] if options[:curies] == false
-          #   LinkCollection[*compile_links_for(curie_configs, options)]
-          # end
 
           def curies_definition_options
             {
@@ -210,6 +208,8 @@ module Roar
               :exec_context => :decorator,
            }
           end
+          
+
         end
       end
     end
