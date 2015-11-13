@@ -1,4 +1,5 @@
 require 'roar/json'
+require 'pry'
 
 module Roar
   module JSON
@@ -193,10 +194,7 @@ module Roar
             }
           end
 
-          def namespaces(options, &block)
-            options = {:rel => options} if options.is_a?(Symbol)
-            link(options, &block)
-          end
+
 
           # Use this to define link arrays. It accepts the shared rel attribute and an array of options per link object.
           #
@@ -219,9 +217,42 @@ module Roar
           #   ]
           # end
           def curies(&block)
-            namespaces(:@namespaces, &block)
+            create_curies_definition!            
+            options = {:rel => :is} 
+            curie_configs << [options, block]
+            
+            #namespaces(:@namespaces, &block)
             #controls(:curies, &block)
           end
+          def curie_configs
+            representable_attrs[:curies] ||= Representable::Inheritable::Array.new
+          end
+          
+          def create_curies_definition!
+            return if representable_attrs.get(:curies) # only create it once.
+            options = curies_definition_options
+            
+           
+            options.merge!(:getter => lambda { |opts| LinkCollection[*compile_links_for(( representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)] })
+            representable_attrs.add(:curies, options)
+          end
+              #
+          # def prepare_curies!(options)
+          #   return [] if options[:curies] == false
+          #   LinkCollection[*compile_links_for(curie_configs, options)]
+          # end
+       
+          
+          def curies_definition_options
+            {
+              :as       => :@namespaces,
+              :extend   => Mason::Controls::LinkCollectionRepresenter,
+              :instance => lambda { |*| LinkCollection.new(link_array_rels) }, # defined in InstanceMethods as this is executed in represented context.
+              :exec_context => :decorator,
+           }
+          end
+          
+          
         end
       end
     end
