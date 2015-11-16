@@ -81,6 +81,23 @@ module Roar
 
         module InstanceMethods
         private
+          def compile_curies_for(configs, *args)
+            configs.collect do |config|
+              options, block  = config.first, config.last
+              href            = run_link_block(block, *args) or next
+
+              prepare_curie_for(href, options)
+            end.compact # FIXME: make this less ugly.
+          end
+          
+          def prepare_curie_for(href, options)
+            # return super(href, options) unless options[:array]  # TODO: remove :array and use special instan
+            options = options.merge(href.is_a?(::Hash) ? href : {:href => href})
+            Hyperlink.new(options)
+            # list = href.collect { |opts| Hypermedia::Hyperlink.new(opts.merge!(:rel => options[:rel])) }
+            # LinkArray.new(list, options[:rel])
+          end
+        
           def prepare_link_for(href, options)
             return super(href, options) unless options[:array]  # TODO: remove :array and use special instan
 
@@ -95,7 +112,7 @@ module Roar
           
           def prepare_curies!(options)
             return [] if options[:curies] == false
-            LinkCollection[*compile_links_for((representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)]
+            LinkCollection[*compile_curies_for((representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)]
           end
           
         end
@@ -182,9 +199,9 @@ module Roar
           #   "name" => "//docs/{rel}"
           # end
 
-          def curies(&block)
+          def curies(key, &block)
             create_curies_definition!
-            options = {:rel => :is}
+            options = {:rel => key}
             curie_configs << [options, block]
           end
 
