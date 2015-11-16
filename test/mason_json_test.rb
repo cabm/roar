@@ -192,13 +192,11 @@ end
 class MasonCurieTest < MiniTest::Spec
   representer!([Roar::JSON::Mason]) do
 
-    curies do
-      {
-        "name" => "//docs/{rel}"
-      }
+    curies :zc do
+        "//docs/{rel}"
     end
 
-    link "is:self" do
+    link "zc:self" do
       "/"
     end
   end
@@ -206,17 +204,17 @@ class MasonCurieTest < MiniTest::Spec
   it { Object.new.extend(rpr).to_hash.must_equal(
     {
       "@namespaces"=> {
-        "is"=> {
+        "zc"=> {
           "name"=> "//docs/{rel}"
         }
       },
       "@controls"=> {
-        "is:self"=> {
+        "zc:self"=> {
           "href"=> "/"
 
         }
       }
-      
+
     }
   )}
 end
