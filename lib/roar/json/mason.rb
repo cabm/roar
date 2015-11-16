@@ -90,12 +90,9 @@ module Roar
             end.compact # FIXME: make this less ugly.
           end
           
-          def prepare_curie_for(href, options)
-            # return super(href, options) unless options[:array]  # TODO: remove :array and use special instan
-            options = options.merge(href.is_a?(::Hash) ? href : {:href => href})
-            Hyperlink.new(options)
-            # list = href.collect { |opts| Hypermedia::Hyperlink.new(opts.merge!(:rel => options[:rel])) }
-            # LinkArray.new(list, options[:rel])
+          def prepare_curie_for(name, options)
+            options = options.merge({:name => name})
+            Hypermedia::Hyperlink.new(options)
           end
         
           def prepare_link_for(href, options)
