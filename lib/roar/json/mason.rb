@@ -25,17 +25,6 @@ module Roar
         end
       end
 
-      class LinkCollection < Hypermedia::LinkCollection
-        def initialize(array_rels, *args)
-          super(*args)
-          @array_rels = array_rels.map(&:to_s)
-        end
-
-        def is_array?(rel)
-          @array_rels.include?(rel.to_s)
-        end
-      end
-
       # Including this module in your representer will render and parse your hyperlinks
       # following the Mason draft 2 specification:
       #     https://github.com/JornWildt/Mason/blob/master/Documentation/Mason-draft-2.md
@@ -74,8 +63,6 @@ module Roar
             Hypermedia::Hyperlink.new(options)
           end
         
-
-
           # TODO: move to LinksDefinition.
           def link_array_rels
             link_configs.collect { |cfg| cfg.first[:array] ? cfg.first[:rel] : nil }.compact
@@ -83,7 +70,7 @@ module Roar
           
           def prepare_curies!(options)
             return [] if options[:curies] == false
-            LinkCollection[*compile_curies_for((representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)]
+            Roar::JSON::HAL::LinkCollection[*compile_curies_for((representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)]
           end
           
         end
@@ -147,7 +134,7 @@ module Roar
             {
               :as       => :@controls,
               :extend   => Mason::Controls::LinkCollectionRepresenter,
-              :instance => lambda { |*| LinkCollection.new(link_array_rels) }, # defined in InstanceMethods as this is executed in represented context.
+              :instance => lambda { |*| Roar::JSON::HAL::LinkCollection.new(link_array_rels) }, # defined in InstanceMethods as this is executed in represented context.
               :exec_context => :decorator,
             }
           end
