@@ -12,31 +12,10 @@ module Roar
     module Mason
       def self.included(base)
         base.class_eval do
-          include Roar::JSON
+         # include Roar::JSON
+          include Roar::JSON::HAL
           include Controls       # overwrites #links_definition_options.
           extend ClassMethods # overwrites #links_definition_options, again.
-          include Resources
-        end
-      end
-
-      module Resources
-        def to_hash(*)
-          super.tap do |hash|
-            embedded = {}
-            representable_attrs.find_all do |dfn|
-              name = dfn[:as].(nil) # DISCUSS: should we simplify that in Representable?
-              next unless dfn[:embedded] and fragment = hash.delete(name)
-              embedded[name] = fragment
-            end
-
-            hash["_embedded"] = embedded if embedded.any?
-            hash["_links"]    = hash.delete("_links") if hash["_links"] # always render _links after _embedded.
-          end
-        end
-
-        def from_hash(hash, *)
-          hash.fetch("_embedded", []).each { |name, fragment| hash[name] = fragment }
-          super
         end
       end
 
@@ -95,12 +74,7 @@ module Roar
             Hypermedia::Hyperlink.new(options)
           end
         
-          def prepare_link_for(href, options)
-            return super(href, options) unless options[:array]  # TODO: remove :array and use special instan
 
-            list = href.collect { |opts| Hypermedia::Hyperlink.new(opts.merge!(:rel => options[:rel])) }
-            LinkArray.new(list, options[:rel])
-          end
 
           # TODO: move to LinksDefinition.
           def link_array_rels
@@ -139,7 +113,7 @@ module Roar
           end
         end
 
-        # DISCUSS: we can probably get rid of this asset.
+      #  DISCUSS: we can probably get rid of this asset.
         class LinkArray < Array
           def initialize(elems, rel)
             super(elems)
@@ -155,10 +129,10 @@ module Roar
 
         require 'representable/json/collection'
         module LinkArrayRepresenter
-          include Representable::JSON::Collection
-
-          items :extend => Roar::JSON::HyperlinkRepresenter,
-            :class => Roar::Hypermedia::Hyperlink
+           include Representable::JSON::Collection
+   
+           items :extend => Roar::JSON::HyperlinkRepresenter,
+             :class => Roar::Hypermedia::Hyperlink
 
           def to_hash(*)
             super.tap do |ary|
