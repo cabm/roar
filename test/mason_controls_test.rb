@@ -1,6 +1,7 @@
 require 'ostruct'
 require 'test_helper'
 require 'roar/json/mason'
+require 'roar/json/hal'
 
 
 class MasonControlsTest < MiniTest::Spec

@@ -1,5 +1,6 @@
 require 'test_helper'
 require 'roar/json/mason'
+require 'roar/json/hal'
 
 class MasonJsonTest < MiniTest::Spec
   let(:rpr) do
