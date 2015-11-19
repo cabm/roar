@@ -65,7 +65,7 @@ module Roar
           def link_array_rels
             link_configs.collect { |cfg| cfg.first[:array] ? cfg.first[:rel] : nil }.compact
           end
-          
+
           def prepare_curies!(options)
             return [] if options[:curies] == false
             Roar::JSON::HAL::LinkCollection[*compile_curies_for((representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)]
@@ -128,7 +128,6 @@ module Roar
               :exec_context => :decorator,
            }
           end
-          
 
         end
       end
