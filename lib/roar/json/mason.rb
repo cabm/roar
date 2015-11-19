@@ -12,10 +12,8 @@ module Roar
     module Mason
       def self.included(base)
         base.class_eval do
-         # include Roar::JSON
           include Roar::JSON::HAL
-          include Controls       # overwrites #links_definition_options.
-          extend ClassMethods # overwrites #links_definition_options, again.
+          include Controls  # overwrites #links_definition_options.
         end
       end
 
@@ -75,65 +73,12 @@ module Roar
           
         end
 
-        require 'representable/json/hash'
-        module LinkCollectionRepresenter
-          include Representable::JSON::Hash
-
-          values :extend => lambda { |item, *|
-            item.is_a?(Array) ? LinkArrayRepresenter : Roar::JSON::HyperlinkRepresenter },
-            :instance => lambda { |fragment, *| fragment.is_a?(LinkArray) ? fragment : Roar::Hypermedia::Hyperlink.new
-          }
-
-          def to_hash(options)
-            super.tap do |hsh|  # TODO: cool: super(:exclude => [:rel]).
-              hsh.each { |k,v| v.delete("rel") }
-            end
-          end
-
-          def from_hash(hash, *args)
-            hash.each { |k,v| hash[k] = LinkArray.new(v, k) if is_array?(k) }
-
-            hsh = super(hash) # this is where :class and :extend do the work.
-
-            hsh.each { |k, v| v.merge!(:rel => k) }
-            hsh.values # links= expects [Hyperlink, Hyperlink]
-          end
-        end
-
-      #  DISCUSS: we can probably get rid of this asset.
-        class LinkArray < Array
-          def initialize(elems, rel)
-            super(elems)
-            @rel = rel
-          end
-
-          attr_reader :rel
-
-          def merge!(attrs)
-            each { |lnk| lnk.merge!(attrs) }
-          end
-        end
-
-        require 'representable/json/collection'
-        module LinkArrayRepresenter
-           include Representable::JSON::Collection
-   
-           items :extend => Roar::JSON::HyperlinkRepresenter,
-             :class => Roar::Hypermedia::Hyperlink
-
-          def to_hash(*)
-            super.tap do |ary|
-              ary.each { |lnk| rel = lnk.delete("rel") }
-            end
-          end
-        end
-
         module ClassMethods
           def links_definition_options
             # property :links_array,
             {
               :as       => :@controls,
-              :extend   => Mason::Controls::LinkCollectionRepresenter,
+              :extend   => HAL::Links::LinkCollectionRepresenter,
               :instance => lambda { |*| Roar::JSON::HAL::LinkCollection.new(link_array_rels) }, # defined in InstanceMethods as this is executed in represented context.
               :exec_context => :decorator,
             }
@@ -178,7 +123,7 @@ module Roar
           def curies_definition_options
             {
               :as       => :@namespaces,
-              :extend   => Mason::Controls::LinkCollectionRepresenter,
+              :extend   => HAL::Links::LinkCollectionRepresenter,
               :instance => lambda { |*| LinkCollection.new(link_array_rels) }, # defined in InstanceMethods as this is executed in represented context.
               :exec_context => :decorator,
            }
