@@ -74,7 +74,7 @@ module Roar
             # property :links_array,
             {
               :as       => :@controls,
-              :extend   => HAL::Links::LinkCollectionRepresenter,
+              :extend   => Roar::JSON::HAL::Links::LinkCollectionRepresenter,
               :instance => lambda { |*| Roar::JSON::HAL::LinkCollection.new({}) }, # defined in InstanceMethods as this is executed in represented context.
               :exec_context => :decorator,
             }
@@ -119,7 +119,7 @@ module Roar
           def curies_definition_options
             {
               :as       => :@namespaces,
-              :extend   => HAL::Links::LinkCollectionRepresenter,
+              :extend   => Roar::JSON::HAL::Links::LinkCollectionRepresenter,
               :instance => lambda { |*| Roar::JSON::HAL::LinkCollection.new({}) }, # defined in InstanceMethods as this is executed in represented context.
               :exec_context => :decorator,
            }
