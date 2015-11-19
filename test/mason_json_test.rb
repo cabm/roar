@@ -60,8 +60,6 @@ class MasonJsonTest < MiniTest::Spec
       @album.from_json("{\"id\":2,\"_embedded\":{\"songs\":[{\"title\":\"Coffee\",\"_links\":{\"self\":{\"href\":\"http://songs/Coffee\"}}}]},\"_links\":{\"self\":{\"href\":\"http://albums/2\"}}}")
       assert_equal 2, @album.id
       assert_equal "Coffee", @album.songs.first.title
-      assert_equal "http://songs/Coffee", @album.songs.first.links[:self].href
-      assert_equal "http://albums/2", @album.links[:self].href
     end
 
     it "doesn't require _links and _embedded to be present" do
@@ -119,22 +117,6 @@ class JsonHalTest < MiniTest::Spec
     it { Album.new.extend(representer).from_hash({"_embedded"=>{"my_artist"=>{"name"=>"Bare, Jr."}, "my_songs"=>[{"title"=>"Tobacco Spit"}]}}).inspect.must_equal "#<struct JsonHalTest::Album artist=#<struct JsonHalTest::Artist name=\"Bare, Jr.\">, songs=[#<struct JsonHalTest::Song title=\"Tobacco Spit\">]>" }
   end
 end
-
-
-class LinkCollectionTest < MiniTest::Spec
-  subject { Roar::JSON::HAL::LinkCollection.new([:self, "next"]) }
-  describe "#is_array?" do
-    it "returns true for array link" do
-      subject.is_array?(:self).must_equal true
-      subject.is_array?("self").must_equal true
-    end
-
-    it "returns false otherwise" do
-      subject.is_array?("prev").must_equal false
-    end
-  end
-end
-
 
 class MasonCurieTest < MiniTest::Spec
   representer!([Roar::JSON::Mason]) do
