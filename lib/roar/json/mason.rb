@@ -62,11 +62,6 @@ module Roar
             Hypermedia::Hyperlink.new(options)
           end
         
-          # TODO: move to LinksDefinition.
-          def link_array_rels
-            link_configs.collect { |cfg| cfg.first[:array] ? cfg.first[:rel] : nil }.compact
-          end
-
           def prepare_curies!(options)
             return [] if options[:curies] == false
             Roar::JSON::HAL::LinkCollection[*compile_curies_for((representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)]
@@ -80,7 +75,7 @@ module Roar
             {
               :as       => :@controls,
               :extend   => HAL::Links::LinkCollectionRepresenter,
-              :instance => lambda { |*| Roar::JSON::HAL::LinkCollection.new(link_array_rels) }, # defined in InstanceMethods as this is executed in represented context.
+              :instance => lambda { |*| Roar::JSON::HAL::LinkCollection.new({}) }, # defined in InstanceMethods as this is executed in represented context.
               :exec_context => :decorator,
             }
           end
@@ -125,7 +120,7 @@ module Roar
             {
               :as       => :@namespaces,
               :extend   => HAL::Links::LinkCollectionRepresenter,
-              :instance => lambda { |*| LinkCollection.new(link_array_rels) }, # defined in InstanceMethods as this is executed in represented context.
+              :instance => lambda { |*| Roar::JSON::HAL::LinkCollection.new({}) }, # defined in InstanceMethods as this is executed in represented context.
               :exec_context => :decorator,
            }
           end
