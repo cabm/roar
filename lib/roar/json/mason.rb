@@ -1,5 +1,6 @@
 require 'roar/json'
 require 'pry'
+require 'roar/json/hal'
 
 module Roar
   module JSON
