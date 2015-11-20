@@ -4,6 +4,7 @@ require 'ostruct'
 require 'roar/representer'
 require 'roar/http_verbs'
 require 'roar/json/hal'
+require 'roar/json/mason'
 
 module AttributesConstructor  # TODO: remove me.
   def initialize(attrs={})
