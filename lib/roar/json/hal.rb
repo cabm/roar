@@ -1,4 +1,6 @@
-require 'roar/json'
+require "roar/json"
+require "representable/json/collection"
+require "representable/json/hash"
 
 module Roar
   module JSON
@@ -46,8 +48,8 @@ module Roar
         base.class_eval do
           include Roar::JSON
           include Links       # overwrites #links_definition_options.
-          extend ClassMethods # overwrites #links_definition_options, again.
           include Resources
+          include LinksReader # gives us Decorator#links => {self=>< >}
         end
       end
 
@@ -56,7 +58,7 @@ module Roar
           super.tap do |hash|
             embedded = {}
             representable_attrs.find_all do |dfn|
-              name = dfn[:as].(nil) # DISCUSS: should we simplify that in Representable?
+              name = dfn[:as] ? dfn[:as].(nil) : dfn.name # DISCUSS: should we simplify that in Representable?
               next unless dfn[:embedded] and fragment = hash.delete(name)
               embedded[name] = fragment
             end
@@ -72,38 +74,7 @@ module Roar
         end
       end
 
-      module ClassMethods
-        def links_definition_options
-          super.merge(:as => :_links)
-        end
-      end
 
-      class LinkCollection < Hypermedia::LinkCollection
-        def initialize(array_rels, *args)
-          super(*args)
-          @array_rels = array_rels.map(&:to_s)
-        end
-
-        def is_array?(rel)
-          @array_rels.include?(rel.to_s)
-        end
-      end
-
-      # Including this module in your representer will render and parse your embedded hyperlinks
-      # following the HAL specification: http://stateless.co/hal_specification.html
-      #
-      #   module SongRepresenter
-      #     include Roar::JSON
-      #     include Roar::JSON::HAL::Links
-      #
-      #     link :self { "http://self" }
-      #   end
-      #
-      # Renders to
-      #
-      #   {"links":{"self":{"href":"http://self"}}}
-      #
-      # Note that the HAL::Links module alone doesn't prepend an underscore to +links+. Use the JSON::HAL module for that.
       module Links
         def self.included(base)
           base.extend ClassMethods  # ::links_definition_options
@@ -112,83 +83,89 @@ module Roar
         end
 
         module InstanceMethods
+          def _links
+            links
+          end
+
         private
           def prepare_link_for(href, options)
-            return super(href, options) unless options[:array]  # TODO: remove :array and use special instan
+            return super(href, options) unless options[:array]  # returns Hyperlink.
 
-            list = href.collect { |opts| Hypermedia::Hyperlink.new(opts.merge!(:rel => options[:rel])) }
-            LinkArray.new(list, options[:rel])
-          end
-
-          # TODO: move to LinksDefinition.
-          def link_array_rels
-            link_configs.collect { |cfg| cfg.first[:array] ? cfg.first[:rel] : nil }.compact
+            ArrayLink.new(options[:rel], href.collect { |opts| Hypermedia::Hyperlink.new(opts) })
           end
         end
 
 
-        require 'representable/json/hash'
-        module LinkCollectionRepresenter
-          include Representable::JSON::Hash
+        class SingleLink
+          class Representer < Representable::Decorator
+            include Representable::JSON::Hash
 
-          values :extend => lambda { |item, *|
-            item.is_a?(Array) ? LinkArrayRepresenter : Roar::JSON::HyperlinkRepresenter },
-            :instance => lambda { |fragment, *| fragment.is_a?(LinkArray) ? fragment : Roar::Hypermedia::Hyperlink.new
-          }
-
-          def to_hash(options)
-            super.tap do |hsh|  # TODO: cool: super(:exclude => [:rel]).
-              hsh.each { |k,v| v.delete("rel") }
+            def to_hash(*)
+              hash = super
+              {hash.delete("rel").to_s => hash}
             end
           end
-
-
-          def from_hash(hash, *args)
-            hash.each { |k,v| hash[k] = LinkArray.new(v, k) if is_array?(k) }
-
-            hsh = super(hash) # this is where :class and :extend do the work.
-
-            hsh.each { |k, v| v.merge!(:rel => k) }
-            hsh.values # links= expects [Hyperlink, Hyperlink]
-          end
         end
 
-        # DISCUSS: we can probably get rid of this asset.
-        class LinkArray < Array
-          def initialize(elems, rel)
-            super(elems)
+        class ArrayLink < Array
+          def initialize(rel, links)
             @rel = rel
+            super(links)
           end
-
           attr_reader :rel
 
-          def merge!(attrs)
-            each { |lnk| lnk.merge!(attrs) }
+
+          # [Hyperlink, Hyperlink]
+          class Representer < Representable::Decorator
+            include Representable::JSON::Collection
+
+            items extend: SingleLink::Representer,
+                  class:  Roar::Hypermedia::Hyperlink
+
+            def to_hash(*)
+              links = []
+              super.each { |hash|
+                links += hash.values # [{"self"=>{"href": ..}}, ..]
+              }
+
+              {represented.rel.to_s => links} # {"self"=>[{"lang"=>"en", "href"=>"http://en.hit"}, {"lang"=>"de", "href"=>"http://de.hit"}]}
+            end
           end
         end
 
-        require 'representable/json/collection'
-        module LinkArrayRepresenter
+
+        # Represents all links for  "_links":  [Hyperlink, [Hyperlink, Hyperlink]]
+        class Representer < Representable::Decorator # links could be a simple collection property.
           include Representable::JSON::Collection
 
-          items :extend => Roar::JSON::HyperlinkRepresenter,
-            :class => Roar::Hypermedia::Hyperlink
+          # render: decorates represented.links with ArrayLink::R or SingleLink::R and calls #to_hash.
+          # parse:  instantiate either Array or Hypermedia instance, decorate respectively, call #from_hash.
+          items decorator: ->(options) { options[:input].is_a?(Array) ? ArrayLink::Representer : SingleLink::Representer },
+                class:     ->(options) { options[:input].is_a?(Array) ? Array : Hypermedia::Hyperlink }
 
-          def to_hash(*)
-            super.tap do |ary|
-              ary.each { |lnk| rel = lnk.delete("rel") }
+          def to_hash(options)
+            links = {}
+            super.each { |hash| links.merge!(hash) } # [{ rel=>{}, rel=>[{}, {}] }]
+            links
+          end
+
+          def from_hash(hash, *args)
+            collection = hash.collect do |rel, value| # "self" => [{"href": "//"}, ] or "self" => {"href": "//"}
+              value.is_a?(Array) ? value.collect { |link| link.merge("rel"=>rel) } : value.merge("rel"=>rel)
             end
+
+            super(collection) # [{rel=>self, href=>//}, ..] or {rel=>self, href=>//}
           end
         end
 
 
         module ClassMethods
           def links_definition_options
-            # property :links_array,
             {
-              :as       => :links,
-              :extend   => HAL::Links::LinkCollectionRepresenter,
-              :instance => lambda { |*| LinkCollection.new(link_array_rels) }, # defined in InstanceMethods as this is executed in represented context.
+              # collection: false,
+              :as       => :_links,
+              decorator: Links::Representer,
+              instance: ->(*) { Array.new }, # defined in InstanceMethods as this is executed in represented context.
               :exec_context => :decorator,
             }
           end
@@ -216,6 +193,24 @@ module Roar
           def curies(&block)
             links(:curies, &block)
           end
+        end
+      end
+
+      # This is only helpful in client mode. It shouldn't be used per default.
+      module LinksReader
+        def links
+          return unless @links
+          tuples = @links.collect do |link|
+            if link.is_a?(Array)
+              next unless link.any?
+              [link.first.rel, link]
+            else
+              [link.rel, link]
+            end
+          end.compact
+
+          # tuples.to_h
+          ::Hash[tuples] # TODO: tuples.to_h when dropping < 2.1.
         end
       end
     end

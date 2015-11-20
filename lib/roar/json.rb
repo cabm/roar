@@ -37,10 +37,10 @@ module Roar
       def links_definition_options
         # FIXME: this doesn't belong into the generic JSON representer.
         {
-          :collection     => true,
-          :class          => Hypermedia::Hyperlink,
-          :extend         => HyperlinkRepresenter,
-          :exec_context   => :decorator,
+          class:          Hypermedia::Hyperlink,
+          decorator:      HyperlinkDecorator,
+          collection:     true,
+          exec_context:   :decorator
         }
       end
     end
@@ -48,7 +48,7 @@ module Roar
 
     require "representable/json/hash"
     # Represents a hyperlink in standard roar+json hash representation.
-    module HyperlinkRepresenter
+    class HyperlinkDecorator < Representable::Decorator
       include Representable::JSON::Hash
     end
   end

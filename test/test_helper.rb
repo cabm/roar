@@ -1,10 +1,17 @@
+# require "pry"
 require 'minitest/autorun'
 require 'ostruct'
 
 require 'roar/representer'
 require 'roar/http_verbs'
-require 'roar/json/hal'
-require 'roar/json/mason'
+
+
+require "roar/json"
+require "roar/json/hal"
+require "roar/json/mason"
+
+require "representable/debug"
+require "pp"
 
 module AttributesConstructor  # TODO: remove me.
   def initialize(attrs={})
@@ -42,6 +49,9 @@ MiniTest::Spec.class_eval do
         module_exec(&block)
       end
     end
+  end
+  def representer
+    rpr # TODO: unify with representable.
   end
 
   def self.representer!(*args, &block)

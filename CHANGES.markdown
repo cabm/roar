@@ -1,3 +1,9 @@
+# 1.1.0
+
+
+* When using `links[]`, you now need to provide the string name, as in `decorator.links["self"]`. Symbols are not supported, anymore.
+* Remove CollectionJSON support until we get more feedback.
+
 # 1.0.3
 
 * Make `:as` work with `HAL`.

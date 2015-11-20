@@ -33,25 +33,17 @@ module Roar
   #
   #   model.to_json(:id => 1)
   module Hypermedia
-    # links= [Hyperlink, Hyperlink] is where parsing happens.
     def self.included(base)
       base.extend ClassMethods
     end
 
-    def links=(arr) # called when assigning parsed links.
-      @links = LinkCollection[*arr]
+    # public API: #links (only helpful in clients, though).
+    attr_writer :links # this is called in parsing when Hyperlinks are deserialized.
+    def links # this is _not_ called by rendering as we go via ::links_config.
+      tuples = (@links||[]).collect { |link| [link.rel, link] }
+      # tuples.to_h
+      ::Hash[tuples] # TODO: tuples.to_h when dropping < 2.1.
     end
-
-    attr_reader :links # this is only useful after parsing.
-
-
-    module LinkConfigsMethod
-      def link_configs # we could store the ::link configs in links Definition.
-        representable_attrs[:links] ||= Representable::Inheritable::Array.new
-      end
-    end
-
-    include LinkConfigsMethod
 
   private
     # Create hypermedia links for this instance by invoking their blocks.
@@ -59,7 +51,8 @@ module Roar
     def prepare_links!(options)
       return [] if options[:links] == false
 
-      LinkCollection[*compile_links_for(link_configs, options)]
+      link_configs = representable_attrs["links"].link_configs
+      compile_links_for(link_configs, options)
     end
 
     def compile_links_for(configs, *args)
@@ -72,41 +65,12 @@ module Roar
     end
 
     def prepare_link_for(href, options)
-      options = options.merge(href.is_a?(::Hash) ? href : {:href => href})
+      options = options.merge(href.is_a?(::Hash) ? href : {href: href})
       Hyperlink.new(options)
     end
 
     def run_link_block(block, *args)
       instance_exec(*args, &block)
-    end
-
-
-    # LinkCollection keeps an array of Hyperlinks to be rendered (setup in #prepare_links!)
-    # or parsed (array is passed to #links= which transforms it into a LinkCollection).
-    # It is implemented as a hash and keys links by their rel value.
-    #
-    #   {"self" => <Hyperlink ..>, ..}
-    class LinkCollection < ::Hash
-      # The only way to create is LinkCollection[<Hyperlink>, <Hyperlink>]
-      def self.[](*arr)
-        super(arr.collect { |link| [link.rel, link] })
-      end
-
-      def [](rel)
-        super(rel.to_s)
-      end
-
-      # Iterating links. Block parameters: |link| or |rel, link|.
-      # This is used Hash::HashBinding#serialize.
-      def each(&block)
-        return values.each(&block) if block.arity == 1
-        super(&block)
-      end
-
-      def collect(&block) # TODO: remove me when we drop representable 2.0.x support!
-        return values.collect(&block) if block.arity == 1
-        super(&block)
-      end
     end
 
 
@@ -122,23 +86,34 @@ module Roar
       # The block is executed in instance context, so you may call properties or other accessors.
       # Note that you're free to put decider logic into #link blocks, too.
       def link(options, &block)
-        create_links_definition! # this assures the links are rendered at the right position.
+        heritage.record(:link, options, &block)
+
+        links_dfn = create_links_definition! # this assures the links are rendered at the right position.
 
         options = {:rel => options} unless options.is_a?(::Hash)
-        link_configs << [options, block]
-      end
 
-      include LinkConfigsMethod
+        links_dfn.link_configs << [options, block]
+      end
 
     private
       # Add a :links Definition to the representable_attrs so they get rendered/parsed.
       def create_links_definition!
-        return if representable_attrs.get(:links) # only create it once.
+        dfn = definitions["links"] and return dfn # only create it once.
 
         options = links_definition_options
-        options.merge!(:getter => lambda { |opts| prepare_links!(opts) })
+        options.merge!(getter: ->(options) { prepare_links!(options) })
 
-        representable_attrs.add(:links, options)
+        dfn = build_definition(:links, options)
+
+
+        dfn.extend(DefinitionOptions)
+        dfn
+      end
+    end
+
+    module DefinitionOptions
+      def link_configs
+        @link_configs ||= []
       end
     end
 
@@ -172,7 +147,6 @@ module Roar
         attrs.inject({}) { |hsh, kv| hsh[kv.first.to_s] = kv.last; hsh }.tap do |hsh|
           hsh["rel"] = hsh["rel"].to_s if hsh["rel"]
         end
-        # raise "Hyperlink without rel doesn't work!" unless @attrs["rel"]
       end
     end
   end
