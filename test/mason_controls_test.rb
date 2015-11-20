@@ -6,7 +6,7 @@ require 'roar/json/mason'
 class MasonControlsTest < MiniTest::Spec
   let(:rpr) do
     Module.new do
-      include Roar::JSON
+      include Roar::JSON::HAL
       include Roar::JSON::Mason::Controls
       link :self do
         "//songs"

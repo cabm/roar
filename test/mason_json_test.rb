@@ -4,7 +4,7 @@ require 'roar/json/mason'
 class MasonJsonTest < MiniTest::Spec
   let(:rpr) do
     Module.new do
-      include Roar::JSON
+      include Roar::JSON::HAL
       include Roar::JSON::Mason
 
       link :next do
