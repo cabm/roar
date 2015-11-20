@@ -8,6 +8,7 @@ class MasonControlsTest < MiniTest::Spec
   let(:rpr) do
     Module.new do
       include Roar::JSON
+      include Roar::JSON::HAL::Links::LinkCollectionRepresenter
       include Roar::JSON::Mason::Controls
       link :self do
         "//songs"
