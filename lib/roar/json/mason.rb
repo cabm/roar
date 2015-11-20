@@ -14,6 +14,7 @@ module Roar
       def self.included(base)
         base.class_eval do
           include Roar::JSON::HAL
+          include Roar::JSON::HAL::Links
           include Controls  # overwrites #links_definition_options.
         end
       end
