@@ -8,7 +8,7 @@ require 'roar/http_verbs'
 
 require "roar/json"
 require "roar/json/hal"
-require "roar/json/mason"
+require "roar/json/mason2"
 
 require "representable/debug"
 require "pp"
