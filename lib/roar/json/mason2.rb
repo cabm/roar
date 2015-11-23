@@ -56,22 +56,14 @@ module Roar
       module Resources
         def to_hash(*)
           super.tap do |hash|
-            embedded = {}
+           
             representable_attrs.find_all do |dfn|
               name = dfn[:as] ? dfn[:as].(nil) : dfn.name # DISCUSS: should we simplify that in Representable?
-              next unless dfn[:embedded] and fragment = hash.delete(name)
-              embedded[name] = fragment
             end
-
-          
             hash["@controls"]   = hash.delete("@controls") if hash["@controls"] 
           end
         end
-
-        def from_hash(hash, *)
-          hash.fetch("_embedded", []).each { |name, fragment| hash[name] = fragment }
-          super
-        end
+      
       end
 
 
@@ -190,7 +182,9 @@ module Roar
           #     :templated => true}
           #   ]
           # end
+        
           def curies(&block)
+            binding.pry
             controls(:curies, &block)
           end
         end
