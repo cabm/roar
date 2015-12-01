@@ -1,6 +1,7 @@
 require 'test_helper'
 require 'roar/json/mason'
 require 'roar/json/hal'
+require 'pry'
 
 class MasonJsonTest < MiniTest::Spec
   let(:rpr) do
@@ -108,5 +109,5 @@ class MasonCurieTest < MiniTest::Spec
     end
   end
 
-  it { Object.new.extend(rpr).to_hash.must_equal({"@controls"=>{"doc:self"=>{"href"=>"/"}, "@namespaces"=>{"doc" => { "name" => "//docs/{rel}"}}}}) }
+  it {  Object.new.extend(rpr).to_hash.must_equal({"@controls"=>{"doc:self"=>{"href"=>"/"}}, "@namespaces"=>{"doc" => { "name" => "//docs/{rel}"}}}) }
 end
