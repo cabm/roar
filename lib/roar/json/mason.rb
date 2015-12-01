@@ -104,10 +104,6 @@ module Roar
 
             super(collection) # {rel=>self, href=>//}
           end
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
         end
 
 
