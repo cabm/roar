@@ -19,28 +19,6 @@ module Roar
         end
       end
 
-      # module Resources
-      #   def to_hash(*)
-      #     super.tap do |hash|
-      #       embedded = {}
-      #       representable_attrs.find_all do |dfn|
-      #         name = dfn[:as] ? dfn[:as].(nil) : dfn.name # DISCUSS: should we simplify that in Representable?
-      #         next unless dfn[:embedded] and fragment = hash.delete(name)
-      #         embedded[name] = fragment
-      #       end
-
-      #       hash["_embedded"] = embedded if embedded.any?
-      #       hash["_links"]    = hash.delete("_links") if hash["_links"] # always render _links after _embedded.
-      #     end
-      #   end
-
-      #   def from_hash(hash, *)
-      #     hash.fetch("_embedded", []).each { |name, fragment| hash[name] = fragment }
-      #     super
-      #   end
-      # end
-
-
       module Links
         def self.included(base)
           base.extend ClassMethods  # ::links_definition_options
@@ -69,13 +47,6 @@ module Roar
             curies_configs = representable_attrs["curies"].link_configs
             compile_curies_for(curies_configs, options)
           end
-
-          # def prepare_curies!(options)
-     #        return [] if options[:curies] == false
-     #        LinkCollection[*compile_curies_for((representable_attrs[:curies] ||= Representable::Inheritable::Array.new), options)]
-     #      end
-        end
-
 
         class SingleLink
           class Representer < Representable::Decorator
@@ -132,19 +103,6 @@ module Roar
               exec_context: :decorator
             }
           end
-
-          # def curie_configs
-          #   representable_attrs["curies"] ||= []
-          # end
-
-          # def create_curies_definition!
-          #   return if representable_attrs.get(:curies) # only create it once.
-          #   options = curies_definition_options
-          #
-          #   options.merge!(:getter => lambda { |opts| prepare_curies!(opts) })
-          #   representable_attrs.add(:curies, options)
-          #
-          # end
           
           def create_curies_definition!
             dfn = definitions["curies"] and return dfn # only create it once.
@@ -153,24 +111,20 @@ module Roar
             options.merge!(getter: ->(options) { prepare_curies!(options) })
 
             dfn = build_definition(:curies, options)
-
-
             dfn.extend(Roar::Hypermedia::DefinitionOptions)
             dfn
             
           end
-          
-        
 
           # Add a CURIEs link section as defined in
           #
           # curies :doc do
           #    "//docs/{rel}",
           # end
+          
           def curies(key, &block)
             create_curies_definition!
             options = {:rel => key}
-           
             representable_attrs["curies"].link_configs << [options, block]
           end
         end

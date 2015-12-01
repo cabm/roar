@@ -54,50 +54,6 @@ class MasonJsonTest < MiniTest::Spec
   end
 end
 
-# class JsonHalTest < MiniTest::Spec
-#   Album  = Struct.new(:artist, :songs)
-#   Artist = Struct.new(:name)
-#   Song = Struct.new(:title)
-
-#   def self.representer!
-#     super([Roar::JSON::HAL])
-#   end
-
-#   def representer
-#     rpr
-#   end
-
-#   describe "render_nil: false" do
-#     representer! do
-#       property :artist, embedded: true, render_nil: false do
-#         property :name
-#       end
-
-#       collection :songs, embedded: true, render_empty: false do
-#         property :title
-#       end
-#     end
-
-#     it { Album.new(Artist.new("Bare, Jr."), [Song.new("Tobacco Spit")]).extend(representer).to_hash.must_equal({"_embedded"=>{"artist"=>{"name"=>"Bare, Jr."}, "songs"=>[{"title"=>"Tobacco Spit"}]}}) }
-#     it { Album.new.extend(representer).to_hash.must_equal({}) }
-#   end
-
-#   describe "as: alias" do
-#     representer! do
-#       property :artist, as: :my_artist, class: Artist, embedded: true do
-#         property :name
-#       end
-
-#       collection :songs, as: :my_songs, class: Song, embedded: true do
-#         property :title
-#       end
-#     end
-
-#     it { Album.new(Artist.new("Bare, Jr."), [Song.new("Tobacco Spit")]).extend(representer).to_hash.must_equal({"_embedded"=>{"my_artist"=>{"name"=>"Bare, Jr."}, "my_songs"=>[{"title"=>"Tobacco Spit"}]}}) }
-#     it { Album.new.extend(representer).from_hash({"_embedded"=>{"my_artist"=>{"name"=>"Bare, Jr."}, "my_songs"=>[{"title"=>"Tobacco Spit"}]}}).inspect.must_equal "#<struct JsonHalTest::Album artist=#<struct JsonHalTest::Artist name=\"Bare, Jr.\">, songs=[#<struct JsonHalTest::Song title=\"Tobacco Spit\">]>" }
-#   end
-# end
-
 class MasonCurieTest < MiniTest::Spec
   representer!([Roar::JSON::Mason]) do
     link "doc:self" do
