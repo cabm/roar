@@ -66,6 +66,25 @@ module Roar
             curies_configs = representable_attrs["curies"].link_configs
             compile_curies_for(curies_configs, options)
           end
+
+          def prepare_meta!(options)
+            return [] if options[:meta] == false
+            meta_configs = representable_attrs["meta"].link_configs
+            compile_metas_for(meta_configs, options)
+          end
+
+          def compile_metas_for(configs, *args)
+            configs.collect do |config|
+              options, block  =  config.first, config.last
+              href            = run_link_block(block, *args) or next
+              prepare_meta_for(href, options)
+            end.compact # FIXME: make this less ugly.
+          end
+
+          def prepare_meta_for(name, options)
+            options = options.merge({:name => name})
+            Hypermedia::Hyperlink.new(options)
+          end
         end
 
         class SingleLink
@@ -146,6 +165,33 @@ module Roar
             create_curies_definition!
             options = {:rel => key}
             representable_attrs["curies"].link_configs << [options, block]
+          end
+
+          def meta(key, &block)
+            create_meta_definition!
+            options = {:rel => key}
+            representable_attrs["meta"].link_configs << [options, block]
+          end
+
+          def create_meta_definition!
+
+            dfn = definitions["meta"] and return dfn # only create it once.
+            options = meta_definition_options
+            options.merge!(getter: ->(options) { prepare_meta!(options) })
+
+            dfn = build_definition(:meta, options)
+            dfn.extend(Roar::Hypermedia::DefinitionOptions)
+            dfn
+
+          end
+
+          def meta_definition_options
+            {
+              as: :@meta,
+              decorator: Links::Representer,
+              instance: ->(*) { Array.new },
+              exec_context: :decorator
+            }
           end
         end
       end
