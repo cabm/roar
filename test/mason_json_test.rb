@@ -85,7 +85,7 @@ end
 
 class MasonMetaTest < MiniTest::Spec
   representer_for([Roar::JSON::Mason]) do
-    meta :meta do
+    meta do
       {
         title: 'title',
         description: 'description'
@@ -97,11 +97,10 @@ class MasonMetaTest < MiniTest::Spec
   let(:album) { Album.new.extend(representer) }
 
   it "creates a meta block at the top level" do
-    binding.pry
-    # album.to_hash["@meta"].must_equal({
-    #     "@title" => 'title',
-    #     "@description" => 'description'
-    #   })
+    album.to_hash["@meta"].must_equal({
+        "@title" => 'title',
+        "@description" => 'description'
+      })
   end
 
 end

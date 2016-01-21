@@ -13,14 +13,16 @@ module Roar
         base.class_eval do
           include Roar::JSON
           include Links       # overwrites #links_definition_options.
+          include Meta
           include Roar::Hypermedia
           include Resources
         end
       end
       module Resources
-      # remove the nested namespaces from each of the results
+        # remove the nested namespaces from each of the results
         def to_hash(*args)
           results = super
+
           results.each do |key, value|
             next if key.start_with?('@')
             next unless value.is_a?(Array)
@@ -65,25 +67,6 @@ module Roar
             return [] if options[:curies] == false
             curies_configs = representable_attrs["curies"].link_configs
             compile_curies_for(curies_configs, options)
-          end
-
-          def prepare_meta!(options)
-            return [] if options[:meta] == false
-            meta_configs = representable_attrs["meta"].link_configs
-            compile_metas_for(meta_configs, options)
-          end
-
-          def compile_metas_for(configs, *args)
-            configs.collect do |config|
-              options, block  =  config.first, config.last
-              href            = run_link_block(block, *args) or next
-              prepare_meta_for(href, options)
-            end.compact # FIXME: make this less ugly.
-          end
-
-          def prepare_meta_for(name, options)
-            options = options.merge({:name => name})
-            Hypermedia::Hyperlink.new(options)
           end
         end
 
@@ -166,11 +149,46 @@ module Roar
             options = {:rel => key}
             representable_attrs["curies"].link_configs << [options, block]
           end
+        end
+      end
 
-          def meta(key, &block)
+      module Meta
+        def self.included(base)
+          base.extend ClassMethods  # ::links_definition_options
+          base.send :include, Hypermedia
+          base.send :include, InstanceMethods
+        end
+
+        module InstanceMethods
+          private
+          def compile_meta_for(configs, *args)
+            return if configs.empty?
+            block = configs.last
+            href = run_link_block(block, *args)
+            prepare_meta_for(href) if href
+          end
+
+          def prepare_meta_for(name)
+            name.inject({}) do |memo, (key, value)|
+              if [:title, :description].include? key
+                key = "@#{key}"
+              end
+              memo[key.to_s] = value
+              memo
+            end
+          end
+
+          def prepare_meta!(options)
+            return [] if options[:meta] == false
+            meta_configs = representable_attrs["meta"].link_configs
+            compile_meta_for(meta_configs, options)
+          end
+        end
+
+        module ClassMethods
+          def meta(&block)
             create_meta_definition!
-            options = {:rel => key}
-            representable_attrs["meta"].link_configs << [options, block]
+            representable_attrs["meta"].link_configs << block
           end
 
           def create_meta_definition!
@@ -188,9 +206,6 @@ module Roar
           def meta_definition_options
             {
               as: :@meta,
-              decorator: Links::Representer,
-              instance: ->(*) { Array.new },
-              exec_context: :decorator
             }
           end
         end
