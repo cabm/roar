@@ -82,3 +82,23 @@ class MasonCurieTest < MiniTest::Spec
     album.to_hash["songs"][0]["@namespaces"].must_be_nil
   end
 end
+
+class MasonMetaTest < MiniTest::Spec
+  representer_for([Roar::JSON::Mason]) do
+    meta do
+      {
+        title: 'title',
+        description: 'description'
+      }
+    end
+  let(:album) { Album.new.extend(representer) }
+
+  it "creates a meta block at the top level" do
+    album.to_hash["@meta"].must_equal({
+        "@title" => 'title',
+        "@description" => 'description'
+      })
+  end
+
+  end
+end
